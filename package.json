@@ -1,0 +1,15 @@
+{
+	"private": true,
+	"scripts": {
+		"format": "prettier --write .",
+		"lint": "tsc --noEmit && eslint ."
+	},
+	"workspace": [
+		"event-api-monitoring"
+	],
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20241022.0",
+		"wrangler": "^3.60.3",
+		"typescript": "^5.5.2"
+	}
+}
