@@ -9,4 +9,5 @@ enabled = true
 
 [vars]
 EVENTS_API_URL_V3_WS = "wss://events.7tv.io/v3"
+EVENTS_API_URL_V3_SSE = "https://events.7tv.io/v3"
 TIMEOUT = 5000 # 5 seconds

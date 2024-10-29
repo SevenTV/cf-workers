@@ -4,11 +4,20 @@ export default {
 	async fetch(request, env): Promise<Response> {
 		const url = new URL(request.url);
 
-		if (request.method !== 'GET' || url.pathname !== '/') {
+		if (request.method !== 'GET') {
 			return new Response(null, { status: 404 });
 		}
 
-		return await checkWebsocketHealth(env.EVENTS_API_URL_V3_WS, env.TIMEOUT)
+		let check;
+		if (url.pathname === "/ws") {
+			check = checkWebsocketHealth;
+		} else if (url.pathname === "/sse") {
+			check = checkSseHealth;
+		} else {
+			return new Response(null, { status: 404 });
+		}
+
+		return await check(env)
 			.then(() => {
 				return new Response(null, { status: 204 });
 			})
@@ -18,26 +27,32 @@ export default {
 	},
 } satisfies ExportedHandler<Env>;
 
-function checkWebsocketHealth(eventsApiUrl: string, timeout: number = 5000): Promise<string | null> {
-	// anti-pattern but necessary here
-	return new Promise((resolve, reject) => {
-		const socket = new WebSocket(`${eventsApiUrl}?app=7tv-monitoring&version=${VERSION}`);
+async function checkWebsocketHealth(env: Env) {
+	await new Promise<void>((resolve, reject) => {
+		const socket = new WebSocket(`${env.EVENTS_API_URL_V3_WS}?app=7tv-monitoring&version=${VERSION}`);
 
 		socket.addEventListener('message', (msg) => {
 			const json = JSON.parse(msg.data.toString());
 
 			if (json.op === 1 || json.op === 2) {
-				// Healthy
-				resolve(null);
-			} else {
-				// Unhealthy
-				reject(`invalid message: ${json}`);
+				resolve();
 			}
 		});
 
 		setTimeout(() => {
-			// Unhealthy
-			reject('timeout');
-		}, timeout);
+			reject("timeout");
+		}, env.TIMEOUT);
+	});
+}
+
+async function checkSseHealth(env: Env) {
+	await new Promise<void>((resolve, reject) => {
+		const eventSource = new EventSource(`${env.EVENTS_API_URL_V3_SSE}?app=7tv-monitoring&version=${VERSION}`);
+
+		eventSource.addEventListener("hello", () => resolve());
+
+		setTimeout(() => {
+			reject("timeout");
+		}, env.TIMEOUT);
 	});
 }
