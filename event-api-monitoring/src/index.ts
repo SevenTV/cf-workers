@@ -1,16 +1,14 @@
-// We should get this from the package.json
 const VERSION = await import('../package.json').then((pkg) => pkg.version);
-const TIMEOUT = 1000 * 5;
 
 export default {
-	async fetch(request, _env, _ctx): Promise<Response> {
+	async fetch(request, env): Promise<Response> {
 		const url = new URL(request.url);
 
 		if (request.method !== 'GET' || url.pathname !== '/') {
 			return new Response(null, { status: 404 });
 		}
 
-		return await checkWebsocketHealth()
+		return await checkWebsocketHealth(env.EVENTS_API_URL_V3_WS, env.TIMEOUT)
 			.then(() => {
 				return new Response(null, { status: 204 });
 			})
@@ -20,10 +18,10 @@ export default {
 	},
 } satisfies ExportedHandler<Env>;
 
-function checkWebsocketHealth(): Promise<string | null> {
+function checkWebsocketHealth(eventsApiUrl: string, timeout: number = 5000): Promise<string | null> {
 	// anti-pattern but necessary here
 	return new Promise((resolve, reject) => {
-		const socket = new WebSocket(`wss://events.7tv.io/v3?app=7tv-monitoring&version=${VERSION}`);
+		const socket = new WebSocket(`${eventsApiUrl}?app=7tv-monitoring&version=${VERSION}`);
 
 		socket.addEventListener('message', (msg) => {
 			const json = JSON.parse(msg.data.toString());
@@ -40,6 +38,6 @@ function checkWebsocketHealth(): Promise<string | null> {
 		setTimeout(() => {
 			// Unhealthy
 			reject('timeout');
-		}, TIMEOUT);
+		}, timeout);
 	});
 }

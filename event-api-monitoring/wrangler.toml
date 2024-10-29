@@ -8,4 +8,5 @@ compatibility_flags = ["nodejs_compat"]
 enabled = true
 
 [vars]
-EVENTS_API_URL = "https://events.7tv.io"
+EVENTS_API_URL_V3_WS = "wss://events.7tv.io/v3"
+TIMEOUT = 5000 # 5 seconds
